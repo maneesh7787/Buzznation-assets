@@ -62,6 +62,11 @@ $page_title = $page_title ?? 'Asset Management System';
                                 <i class="fas fa-handshake"></i> Assignments
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/audit-logs.php">
+                                <i class="fas fa-clipboard-list"></i> Audit Logs
+                            </a>
+                        </li>
                     <?php elseif ($current_user['role'] === 'hr'): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="/hr/dashboard.php">

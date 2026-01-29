@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/audit.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -44,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['employee_id'] = $user['employee_id'];
                     
+                    // Log successful login
+                    logAudit('login', 'user', $user['id'], 'Successful login');
+                    
                     // Redirect based on role
                     if ($user['role'] === 'admin') {
                         header('Location: /admin/dashboard.php');
@@ -54,9 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     exit();
                 } else {
+                    // Log failed login attempt
+                    $_SESSION['username'] = $username; // Temporarily set for logging
+                    logAudit('login_failed', 'user', null, 'Invalid password for username: ' . $username);
+                    unset($_SESSION['username']);
+                    
                     $error = 'Invalid username or password.';
                 }
             } else {
+                // Log failed login attempt
+                $_SESSION['username'] = $username; // Temporarily set for logging
+                logAudit('login_failed', 'user', null, 'Invalid username: ' . $username);
+                unset($_SESSION['username']);
+                
                 $error = 'Invalid username or password.';
             }
             

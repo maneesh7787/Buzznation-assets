@@ -2,6 +2,7 @@
 $page_title = 'Asset Assignments';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 requireRole('admin');
 
 $conn = getDBConnection();
@@ -109,6 +110,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     $conn->commit();
+                    
+                    // Log audit
+                    logAudit('create_assignment', 'assignment', $conn->insert_id, [
+                        'asset_id' => $asset_id,
+                        'employee_id' => $employee_id,
+                        'date_issued' => $date_issued
+                    ]);
+                    
                     $message = 'Asset assigned successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -145,6 +154,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     $conn->commit();
+                    
+                    // Log audit
+                    logAudit('return_asset', 'assignment', $assignment_id, [
+                        'asset_id' => $asset_id,
+                        'date_returned' => $date_returned,
+                        'condition' => $condition_at_return
+                    ]);
+                    
                     $message = 'Asset returned successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -199,6 +216,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Asset status remains 'assigned' (no change needed)
                     
                     $conn->commit();
+                    
+                    // Log audit
+                    logAudit('swap_asset', 'assignment', $assignment_id, [
+                        'old_employee_id' => $current_assignment['employee_id'],
+                        'new_employee_id' => $new_employee_id,
+                        'asset_id' => $current_assignment['asset_id'],
+                        'reason' => $swap_reason
+                    ]);
+                    
                     $message = 'Asset successfully swapped from ' . $current_assignment['old_employee_name'] . ' to ' . $new_employee['name'] . '!';
                     $message_type = 'success';
                 } catch (Exception $e) {

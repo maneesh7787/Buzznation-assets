@@ -56,6 +56,13 @@ function getCurrentUser() {
 
 // Logout user
 function logout() {
+    require_once __DIR__ . '/audit.php';
+    
+    // Log logout before destroying session
+    if (isLoggedIn()) {
+        logAudit('logout', 'user', $_SESSION['user_id'], 'User logged out');
+    }
+    
     session_unset();
     session_destroy();
     header('Location: /login.php');
