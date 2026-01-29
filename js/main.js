@@ -51,6 +51,20 @@ $(document).ready(function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Password confirmation validation
+    $('#confirm_password').on('keyup', function() {
+        var password = $('#new_password').val();
+        var confirmPassword = $(this).val();
+        
+        if (password !== confirmPassword) {
+            $('#password-match-message').show();
+            $(this).addClass('is-invalid');
+        } else {
+            $('#password-match-message').hide();
+            $(this).removeClass('is-invalid');
+        }
+    });
 });
 
 // Show loading spinner

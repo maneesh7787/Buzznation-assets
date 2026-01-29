@@ -24,6 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $username = sanitizeInput($_POST['username']);
                 $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
                 
+                // Validate email format if provided
+                if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $message = 'Invalid email format.';
+                    $message_type = 'danger';
+                    break;
+                }
+                
                 try {
                     $conn->begin_transaction();
                     
@@ -43,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message_type = 'success';
                 } catch (Exception $e) {
                     $conn->rollback();
-                    $message = 'Error adding employee: ' . $e->getMessage();
+                    $message = 'Error adding employee. Please check if Employee ID or Username already exists.';
                     $message_type = 'danger';
                 }
                 break;
@@ -58,6 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $email = sanitizeInput($_POST['email']);
                 $phone = sanitizeInput($_POST['phone']);
                 
+                // Validate email format if provided
+                if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $message = 'Invalid email format.';
+                    $message_type = 'danger';
+                    break;
+                }
+                
                 try {
                     $stmt = $conn->prepare("UPDATE employees SET name = ?, department = ?, designation = ?, date_of_joining = ?, work_location = ?, email = ?, phone = ? WHERE id = ?");
                     $stmt->bind_param("sssssssi", $name, $department, $designation, $date_of_joining, $work_location, $email, $phone, $id);
@@ -66,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Employee updated successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
-                    $message = 'Error updating employee: ' . $e->getMessage();
+                    $message = 'Error updating employee. Please try again.';
                     $message_type = 'danger';
                 }
                 break;
@@ -109,6 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = intval($_POST['id']);
                 
                 try {
+                    // Check if employee has active asset assignments
+                    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM asset_assignments WHERE employee_id = ? AND status = 'active'");
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $count = $result->fetch_assoc()['count'];
+                    
+                    if ($count > 0) {
+                        $message = 'Cannot delete employee: Employee has ' . $count . ' active asset assignment(s). Please return all assets first.';
+                        $message_type = 'warning';
+                        break;
+                    }
+                    
                     $conn->begin_transaction();
                     
                     // Delete user account
@@ -126,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message_type = 'success';
                 } catch (Exception $e) {
                     $conn->rollback();
-                    $message = 'Error deleting employee: ' . $e->getMessage();
+                    $message = 'Error deleting employee. Please try again.';
                     $message_type = 'danger';
                 }
                 break;

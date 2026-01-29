@@ -110,13 +110,14 @@ require_once __DIR__ . '/includes/header.php';
                     
                     <div class="mb-3">
                         <label class="form-label">New Password *</label>
-                        <input type="password" class="form-control" name="new_password" required minlength="6">
-                        <small class="text-muted">Minimum 6 characters</small>
+                        <input type="password" class="form-control" name="new_password" id="new_password" required minlength="8">
+                        <small class="text-muted">Minimum 8 characters</small>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Confirm New Password *</label>
-                        <input type="password" class="form-control" name="confirm_password" required minlength="6">
+                        <input type="password" class="form-control" name="confirm_password" id="confirm_password" required minlength="8">
+                        <small id="password-match-message" class="text-danger" style="display:none;">Passwords do not match</small>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">
