@@ -12,6 +12,82 @@ $message_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
+            case 'approve_request':
+                $request_id = intval($_POST['request_id']);
+                $admin_notes = sanitizeInput($_POST['admin_notes'] ?? '');
+                
+                try {
+                    $conn->begin_transaction();
+                    
+                    // Get request details
+                    $stmt = $conn->prepare("SELECT * FROM asset_requests WHERE id = ? AND status = 'pending'");
+                    $stmt->bind_param("i", $request_id);
+                    $stmt->execute();
+                    $request = $stmt->get_result()->fetch_assoc();
+                    
+                    if ($request) {
+                        $asset_ids = explode(',', $request['requested_asset_ids']);
+                        $date_issued = date('Y-m-d');
+                        
+                        // Create assignments for each requested asset
+                        foreach ($asset_ids as $asset_id) {
+                            $asset_id = intval($asset_id);
+                            
+                            // Check if asset is still available
+                            $stmt = $conn->prepare("SELECT status FROM assets WHERE id = ?");
+                            $stmt->bind_param("i", $asset_id);
+                            $stmt->execute();
+                            $asset = $stmt->get_result()->fetch_assoc();
+                            
+                            if ($asset && $asset['status'] === 'available') {
+                                // Create assignment
+                                $notes = 'Requested by employee. ' . ($request['request_reason'] ?: '');
+                                $stmt = $conn->prepare("INSERT INTO asset_assignments (asset_id, employee_id, date_issued, condition_at_issue, notes, acknowledgement_date) VALUES (?, ?, ?, 'good', ?, NOW())");
+                                $stmt->bind_param("iiss", $asset_id, $request['employee_id'], $date_issued, $notes);
+                                $stmt->execute();
+                                
+                                // Update asset status
+                                $stmt = $conn->prepare("UPDATE assets SET status = 'assigned' WHERE id = ?");
+                                $stmt->bind_param("i", $asset_id);
+                                $stmt->execute();
+                            }
+                        }
+                        
+                        // Update request status
+                        $stmt = $conn->prepare("UPDATE asset_requests SET status = 'approved', admin_notes = ?, approved_by = ?, approved_date = NOW() WHERE id = ?");
+                        $stmt->bind_param("sii", $admin_notes, $_SESSION['user_id'], $request_id);
+                        $stmt->execute();
+                        
+                        $conn->commit();
+                        $message = 'Asset request approved and assets assigned successfully!';
+                        $message_type = 'success';
+                    } else {
+                        throw new Exception('Request not found or already processed');
+                    }
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    $message = 'Error approving request: ' . $e->getMessage();
+                    $message_type = 'danger';
+                }
+                break;
+                
+            case 'reject_request':
+                $request_id = intval($_POST['request_id']);
+                $admin_notes = sanitizeInput($_POST['admin_notes'] ?? '');
+                
+                try {
+                    $stmt = $conn->prepare("UPDATE asset_requests SET status = 'rejected', admin_notes = ?, approved_by = ?, approved_date = NOW() WHERE id = ?");
+                    $stmt->bind_param("sii", $admin_notes, $_SESSION['user_id'], $request_id);
+                    $stmt->execute();
+                    
+                    $message = 'Asset request rejected.';
+                    $message_type = 'warning';
+                } catch (Exception $e) {
+                    $message = 'Error rejecting request: ' . $e->getMessage();
+                    $message_type = 'danger';
+                }
+                break;
+                
             case 'assign':
                 $asset_id = intval($_POST['asset_id']);
                 $employee_id = intval($_POST['employee_id']);
@@ -96,6 +172,32 @@ while ($row = $result->fetch_assoc()) {
     $assignments[] = $row;
 }
 
+// Get pending asset requests
+$pending_requests = [];
+$query = "SELECT ar.*, e.name as employee_name, e.employee_id as emp_id, e.department
+          FROM asset_requests ar
+          JOIN employees e ON ar.employee_id = e.id
+          WHERE ar.status = 'pending'
+          ORDER BY ar.created_at ASC";
+$result = $conn->query($query);
+while ($row = $result->fetch_assoc()) {
+    // Get asset details for this request
+    $asset_ids = explode(',', $row['requested_asset_ids']);
+    $assets_info = [];
+    foreach ($asset_ids as $aid) {
+        $aid = intval($aid);
+        $stmt = $conn->prepare("SELECT a.*, ac.category_name FROM assets a JOIN asset_categories ac ON a.category_id = ac.id WHERE a.id = ?");
+        $stmt->bind_param("i", $aid);
+        $stmt->execute();
+        $asset = $stmt->get_result()->fetch_assoc();
+        if ($asset) {
+            $assets_info[] = $asset;
+        }
+    }
+    $row['assets'] = $assets_info;
+    $pending_requests[] = $row;
+}
+
 // Get available assets for assignment
 $available_assets = [];
 $query = "SELECT a.*, c.category_name 
@@ -131,6 +233,105 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 <?php endif; ?>
 
+<!-- Pending Asset Requests Section -->
+<?php if (!empty($pending_requests)): ?>
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Asset Requests (<?php echo count($pending_requests); ?>)</h5>
+    </div>
+    <div class="card-body">
+        <?php foreach ($pending_requests as $request): ?>
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user"></i> <?php echo htmlspecialchars($request['employee_name']); ?>
+                                <span class="badge bg-secondary"><?php echo htmlspecialchars($request['emp_id']); ?></span>
+                            </h6>
+                            <small class="text-muted">
+                                Department: <?php echo htmlspecialchars($request['department']); ?> | 
+                                Requested: <?php echo date('M d, Y H:i', strtotime($request['created_at'])); ?>
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-success" onclick="approveRequest(<?php echo htmlspecialchars(json_encode($request)); ?>)">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectRequest(<?php echo $request['id']; ?>)">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if ($request['request_reason']): ?>
+                        <p class="mb-2"><strong>Reason:</strong> <?php echo htmlspecialchars($request['request_reason']); ?></p>
+                    <?php endif; ?>
+                    
+                    <p class="mb-2"><strong>Requested Assets (<?php echo count($request['assets']); ?>):</strong></p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Asset Tag</th>
+                                    <th>Category</th>
+                                    <th>Brand/Model</th>
+                                    <th>Condition</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($request['assets'] as $asset): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($asset['asset_tag']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($asset['category_name']); ?></td>
+                                        <td>
+                                            <?php 
+                                            $brand_model = trim(($asset['brand'] ?? '') . ' ' . ($asset['model'] ?? ''));
+                                            echo htmlspecialchars($brand_model ?: 'N/A');
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            $condition_class = [
+                                                'excellent' => 'success',
+                                                'good' => 'info',
+                                                'fair' => 'warning',
+                                                'poor' => 'danger'
+                                            ];
+                                            $class = $condition_class[$asset['condition_status']] ?? 'secondary';
+                                            ?>
+                                            <span class="badge bg-<?php echo $class; ?>">
+                                                <?php echo ucfirst($asset['condition_status']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if ($asset['status'] === 'available'): ?>
+                                                <span class="badge bg-success">Available</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger">
+                                                    <?php echo ucfirst($asset['status']); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0 mt-2">
+                        <i class="fas fa-check-circle"></i> Employee has acknowledged responsibility for these assets.
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Assigned Assets Section -->
 <div class="card">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Assignment List</h5>
@@ -204,6 +405,76 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Request Modal -->
+<div class="modal fade" id="approveRequestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Approve Asset Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="approve_request">
+                    <input type="hidden" name="request_id" id="approve_request_id">
+                    
+                    <div class="alert alert-info">
+                        <strong>Employee:</strong> <span id="approve_employee_name"></span><br>
+                        <strong>Department:</strong> <span id="approve_department"></span><br>
+                        <strong>Assets:</strong> <span id="approve_asset_count"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Admin Notes (Optional)</label>
+                        <textarea class="form-control" name="admin_notes" rows="3" placeholder="Add any notes about this approval..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Confirm:</strong> Approving this request will assign all available assets to the employee immediately.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Approve Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Request Modal -->
+<div class="modal fade" id="rejectRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Reject Asset Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="reject_request">
+                    <input type="hidden" name="request_id" id="reject_request_id">
+                    
+                    <p>Are you sure you want to reject this asset request?</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Rejection *</label>
+                        <textarea class="form-control" name="admin_notes" rows="3" placeholder="Please provide a reason for rejection..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Reject Request
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -316,6 +587,23 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+function approveRequest(request) {
+    document.getElementById('approve_request_id').value = request.id;
+    document.getElementById('approve_employee_name').textContent = request.employee_name;
+    document.getElementById('approve_department').textContent = request.department;
+    document.getElementById('approve_asset_count').textContent = request.assets.length + ' asset(s)';
+    
+    var modal = new bootstrap.Modal(document.getElementById('approveRequestModal'));
+    modal.show();
+}
+
+function rejectRequest(requestId) {
+    document.getElementById('reject_request_id').value = requestId;
+    
+    var modal = new bootstrap.Modal(document.getElementById('rejectRequestModal'));
+    modal.show();
+}
+
 function returnAsset(assign) {
     document.getElementById('return_assignment_id').value = assign.id;
     document.getElementById('return_employee_name').textContent = assign.employee_name;

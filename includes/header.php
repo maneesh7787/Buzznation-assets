@@ -85,6 +85,11 @@ $page_title = $page_title ?? 'Asset Management System';
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/employee/request-assets.php">
+                                <i class="fas fa-file-import"></i> Request Assets
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/employee/my-assets.php">
                                 <i class="fas fa-laptop"></i> My Assets
                             </a>

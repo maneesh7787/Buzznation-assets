@@ -77,7 +77,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- Statistics -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card stat-card success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
@@ -89,6 +89,17 @@ require_once __DIR__ . '/../includes/header.php';
                         <i class="fas fa-laptop fa-3x"></i>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="fas fa-file-import"></i> Need Assets?</h5>
+                <p class="mb-3">You can request assets from the organization. Submit a request and the admin will review it.</p>
+                <a href="/employee/request-assets.php" class="btn btn-light">
+                    <i class="fas fa-plus-circle"></i> Request Assets
+                </a>
             </div>
         </div>
     </div>
