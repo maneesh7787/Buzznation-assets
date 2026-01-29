@@ -45,10 +45,12 @@ A comprehensive web-based asset management system built with PHP, MySQL, HTML, C
 
 ## System Requirements
 
-- PHP 7.4 or higher
+- PHP 7.4 or higher (**PHP 8.0+ recommended** for security and performance)
 - MySQL 5.7 or higher
 - Apache/Nginx web server (or use PHP's built-in server for local development)
 - Modern web browser
+
+**Note**: PHP 7.4 reached End of Life in November 2022. For production deployments or enhanced security, use PHP 8.0 or higher.
 
 ## Quick Start - Run on Local Server 🚀
 

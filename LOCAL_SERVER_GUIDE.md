@@ -19,8 +19,10 @@ This guide provides step-by-step instructions for running the Asset Management S
 
 ### Prerequisites
 
-- PHP 7.4 or higher installed on your computer
+- PHP 7.4 or higher installed on your computer (**PHP 8.0+ recommended** for security)
 - MySQL or MariaDB installed
+
+**Security Note**: PHP 7.4 reached End of Life in November 2022. For production use or if security is a concern, use PHP 8.0 or higher which receives active security updates.
 
 ### Step 1: Check if PHP is Installed
 
@@ -91,9 +93,11 @@ Edit the file `config/database.php`:
 ```php
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');           // Your MySQL username
-define('DB_PASS', '');               // Your MySQL password (empty if no password)
+define('DB_PASS', '');               // Your MySQL password (empty if no password set)
 define('DB_NAME', 'asset_management');
 ```
+
+**Security Recommendation**: While an empty password works for local development, it's recommended to set a password for your MySQL installation, even locally. This prevents accidentally deploying an insecure configuration.
 
 ### Step 7: Start the PHP Development Server
 
@@ -120,6 +124,8 @@ PHP 8.x Development Server (http://localhost:8080) started
 3. Login with:
    - **Username**: `admin`
    - **Password**: `admin123`
+
+⚠️ **SECURITY WARNING**: These are default credentials. **You must change the admin password immediately** after first login by going to Profile → Change Password. Using default credentials is a serious security risk.
 
 ### Step 10: Success! 🎉
 
@@ -175,6 +181,8 @@ XAMPP is a popular all-in-one package for Windows, Mac, and Linux.
    define('DB_PASS', '');  // Usually empty for XAMPP
    define('DB_NAME', 'asset_management');
    ```
+   
+   **Security Note**: XAMPP defaults to no MySQL password. Consider setting a password for better security, even in development.
 
 5. **Access Application**
    - Open browser: http://localhost/Buzznation-assets/
@@ -325,13 +333,17 @@ For advanced users who want to configure Apache or Nginx manually.
        }
        
        location ~ \.php$ {
-           fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+           # Adjust the socket path based on your PHP version
+           # Common paths: php7.4-fpm.sock, php8.0-fpm.sock, php8.1-fpm.sock, php8.2-fpm.sock
+           fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;  # Update version as needed
            fastcgi_index index.php;
            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
            include fastcgi_params;
        }
    }
    ```
+   
+   **Note**: Update the PHP-FPM socket path to match your installed PHP version. Find your socket with: `find /var/run/php/ -name "*.sock"`
 
 3. **Restart Nginx**
    ```bash
@@ -411,6 +423,8 @@ php -S 0.0.0.0:8080
 # Access from other device: http://YOUR_LOCAL_IP:8080
 ```
 
+⚠️ **SECURITY WARNING**: Binding to 0.0.0.0 exposes your application to all network interfaces. Only do this on trusted, private networks (like your home WiFi). **Never do this on public or shared networks** as it exposes your application to anyone on the network. For production use, configure proper firewall rules and use Apache/Nginx with SSL.
+
 ### Problem: Port 8080 already in use
 
 **Solution**: Use a different port:
@@ -455,9 +469,12 @@ mysql -u root -p asset_management < database_schema.sql
 ```sql
 mysql -u root -p
 USE asset_management;
+# Generate a new password hash using PHP's password_hash() function
+# The hash below is for 'admin123' - DO NOT use this in production!
 UPDATE users SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' WHERE username = 'admin';
-# This sets password to: admin123
 ```
+
+⚠️ **SECURITY WARNING**: The password hash above resets the password to the default `admin123`. After using this reset command, **immediately log in and change the password** to a strong, unique password. Never use default credentials in any environment.
 
 ### Check Setup
 Open in browser: http://localhost:8080/setup-check.php
