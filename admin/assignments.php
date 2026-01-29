@@ -153,6 +153,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message_type = 'danger';
                 }
                 break;
+                
+            case 'swap':
+                $assignment_id = intval($_POST['assignment_id']);
+                $new_employee_id = intval($_POST['new_employee_id']);
+                $swap_reason = sanitizeInput($_POST['swap_reason'] ?? '');
+                
+                try {
+                    $conn->begin_transaction();
+                    
+                    // Get current assignment details
+                    $stmt = $conn->prepare("SELECT aa.*, e.name as old_employee_name FROM asset_assignments aa JOIN employees e ON aa.employee_id = e.id WHERE aa.id = ? AND aa.status = 'active'");
+                    $stmt->bind_param("i", $assignment_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $current_assignment = $result->fetch_assoc();
+                    
+                    if (!$current_assignment) {
+                        throw new Exception('Assignment not found or not active');
+                    }
+                    
+                    // Get new employee details
+                    $stmt = $conn->prepare("SELECT name FROM employees WHERE id = ? AND status = 'active'");
+                    $stmt->bind_param("i", $new_employee_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $new_employee = $result->fetch_assoc();
+                    
+                    if (!$new_employee) {
+                        throw new Exception('New employee not found or inactive');
+                    }
+                    
+                    // Mark current assignment as returned (auto-swap)
+                    $return_notes = 'Asset swapped to ' . $new_employee['name'] . '. Reason: ' . ($swap_reason ?: 'Asset transfer');
+                    $stmt = $conn->prepare("UPDATE asset_assignments SET date_returned = CURDATE(), condition_at_return = condition_at_issue, notes = CONCAT(COALESCE(notes, ''), ' | ', ?), status = 'returned' WHERE id = ?");
+                    $stmt->bind_param("si", $return_notes, $assignment_id);
+                    $stmt->execute();
+                    
+                    // Create new assignment to new employee
+                    $new_notes = 'Asset transferred from ' . $current_assignment['old_employee_name'] . '. Reason: ' . ($swap_reason ?: 'Asset transfer');
+                    $stmt = $conn->prepare("INSERT INTO asset_assignments (asset_id, employee_id, date_issued, condition_at_issue, notes, acknowledgement_date) VALUES (?, ?, CURDATE(), ?, ?, NOW())");
+                    $stmt->bind_param("iiss", $current_assignment['asset_id'], $new_employee_id, $current_assignment['condition_at_issue'], $new_notes);
+                    $stmt->execute();
+                    
+                    // Asset status remains 'assigned' (no change needed)
+                    
+                    $conn->commit();
+                    $message = 'Asset successfully swapped from ' . $current_assignment['old_employee_name'] . ' to ' . $new_employee['name'] . '!';
+                    $message_type = 'success';
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    $message = 'Error swapping asset: ' . $e->getMessage();
+                    $message_type = 'danger';
+                }
+                break;
         }
     }
 }
@@ -335,9 +389,14 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="card">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Assignment List</h5>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignAssetModal">
-            <i class="fas fa-plus"></i> Assign Asset
-        </button>
+        <div>
+            <a href="export-assignments-csv.php" class="btn btn-success me-2">
+                <i class="fas fa-file-csv"></i> Export to CSV
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignAssetModal">
+                <i class="fas fa-plus"></i> Assign Asset
+            </button>
+        </div>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -396,6 +455,9 @@ require_once __DIR__ . '/../includes/header.php';
                             </td>
                             <td class="table-actions">
                                 <?php if ($assign['status'] === 'active'): ?>
+                                    <button class="btn btn-sm btn-info me-1" onclick="swapAsset(<?php echo htmlspecialchars(json_encode($assign)); ?>)">
+                                        <i class="fas fa-exchange-alt"></i> Swap
+                                    </button>
                                     <button class="btn btn-sm btn-warning" onclick="returnAsset(<?php echo htmlspecialchars(json_encode($assign)); ?>)">
                                         <i class="fas fa-undo"></i> Return
                                     </button>
@@ -586,6 +648,54 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<!-- Swap Asset Modal -->
+<div class="modal fade" id="swapAssetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Swap Asset to Another Employee</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="swap">
+                    <input type="hidden" name="assignment_id" id="swap_assignment_id">
+                    
+                    <div class="alert alert-info">
+                        <strong>Current Employee:</strong> <span id="swap_current_employee"></span><br>
+                        <strong>Asset:</strong> <span id="swap_asset_tag"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">New Employee *</label>
+                        <select class="form-select" name="new_employee_id" id="swap_new_employee" required>
+                            <option value="">Select New Employee</option>
+                            <?php foreach ($active_employees as $emp): ?>
+                                <option value="<?php echo $emp['id']; ?>">
+                                    <?php echo htmlspecialchars($emp['name'] . ' (' . $emp['employee_id'] . ')'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Swap</label>
+                        <textarea class="form-control" name="swap_reason" rows="3" placeholder="Optional: Explain why this asset is being transferred..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> This will automatically return the asset from the current employee and assign it to the new employee.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">Swap Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function approveRequest(request) {
     document.getElementById('approve_request_id').value = request.id;
@@ -610,6 +720,31 @@ function returnAsset(assign) {
     document.getElementById('return_asset_tag').textContent = assign.asset_tag;
     
     var modal = new bootstrap.Modal(document.getElementById('returnAssetModal'));
+    modal.show();
+}
+
+function swapAsset(assign) {
+    document.getElementById('swap_assignment_id').value = assign.id;
+    document.getElementById('swap_current_employee').textContent = assign.employee_name;
+    document.getElementById('swap_asset_tag').textContent = assign.asset_tag;
+    
+    // Reset the employee dropdown to prevent selecting the same employee
+    var dropdown = document.getElementById('swap_new_employee');
+    dropdown.value = '';
+    
+    // Optionally disable the current employee in the dropdown
+    var currentEmpId = assign.employee_id;
+    Array.from(dropdown.options).forEach(option => {
+        if (option.value == currentEmpId) {
+            option.disabled = true;
+            option.textContent += ' (Current)';
+        } else {
+            option.disabled = false;
+            option.textContent = option.textContent.replace(' (Current)', '');
+        }
+    });
+    
+    var modal = new bootstrap.Modal(document.getElementById('swapAssetModal'));
     modal.show();
 }
 </script>
