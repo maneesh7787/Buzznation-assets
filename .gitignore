@@ -1,0 +1,54 @@
+# Environment-specific files
+config/database.php.local
+.env
+.env.local
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+error_log
+php_errors.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cache
+cache/
+*.cache
+
+# Uploads (if any)
+uploads/*
+!uploads/.gitkeep
+
+# Backup files
+*.sql.backup
+*.bak
+backup_*.sql
+
+# OS generated files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Composer (if used in future)
+/vendor/
+composer.phar
+composer.lock
+
+# Node modules (if used in future)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Session files
+sessions/*
+!sessions/.gitkeep

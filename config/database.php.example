@@ -1,0 +1,43 @@
+<?php
+/**
+ * Database Configuration Template
+ * 
+ * INSTRUCTIONS:
+ * 1. Copy this file to config/database.php
+ * 2. Update the values below with your database credentials
+ * 3. DO NOT commit config/database.php to version control
+ * 
+ * For production environments:
+ * - Use strong, unique passwords
+ * - Create a dedicated database user with minimum required privileges
+ * - Do NOT use 'root' user
+ */
+
+// Database host (usually 'localhost')
+define('DB_HOST', 'localhost');
+
+// Database username (create a dedicated user for security)
+define('DB_USER', 'your_database_user');
+
+// Database password (use a strong password)
+define('DB_PASS', 'your_strong_password');
+
+// Database name
+define('DB_NAME', 'asset_management');
+
+// Create connection
+function getDBConnection() {
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    
+    if ($conn->connect_error) {
+        // Log error for debugging (in production, log to file)
+        error_log("Database connection failed: " . $conn->connect_error);
+        die("Database connection error. Please contact the administrator.");
+    }
+    
+    return $conn;
+}
+
+// Set character set to utf8
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+?>
