@@ -31,11 +31,13 @@
 </IfModule>
 
 # PHP Security Settings
-<IfModule mod_php7.c>
-    php_flag display_errors Off
-    php_flag log_errors On
-    php_value error_log /var/log/php_errors.log
-</IfModule>
+# Note: PHP settings should be configured in php.ini for PHP-FPM
+# Uncomment the following block only if using mod_php (Apache module):
+# <IfModule mod_php.c>
+#     php_flag display_errors Off
+#     php_flag log_errors On
+#     php_value error_log /var/log/php_errors.log
+# </IfModule>
 
 # Cache Control for Static Assets
 <IfModule mod_expires.c>

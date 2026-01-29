@@ -52,6 +52,14 @@ A comprehensive web-based asset management system built with PHP, MySQL, HTML, C
 
 ## Installation
 
+### Quick Setup Check
+
+After deploying the application, visit `http://your-domain/setup-check.php` to verify your environment is properly configured. This diagnostic page will:
+- Check PHP version and required extensions
+- Verify database connectivity
+- Confirm database schema is imported
+- Identify any configuration issues
+
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/maneesh7787/Buzznation-assets.git
@@ -79,6 +87,8 @@ define('DB_NAME', 'asset_management');
 #### Apache
 Ensure `.htaccess` support is enabled and `mod_rewrite` is active.
 
+**Note**: If using PHP-FPM (recommended for modern setups), the PHP configuration directives in `.htaccess` are commented out by default. Configure PHP settings in `php.ini` instead.
+
 #### Nginx
 Configure your server block to route requests through `index.php`.
 
@@ -87,6 +97,9 @@ Configure your server block to route requests through `index.php`.
 chmod -R 755 /path/to/asset-management
 chown -R www-data:www-data /path/to/asset-management
 ```
+
+### 6. Verify Installation
+Visit `http://your-domain/setup-check.php` to verify all requirements are met.
 
 ## Default Login Credentials
 

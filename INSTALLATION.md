@@ -131,15 +131,27 @@ sudo chown -R nginx:nginx /path/to/Buzznation-assets
 sudo chmod -R 755 /path/to/Buzznation-assets
 ```
 
-### Step 7: Test Installation
+### Step 7: Verify Installation
+
+Before attempting to log in, verify your environment is properly configured:
 
 1. Open your web browser
-2. Navigate to: `http://your-domain.com/login.php` or `http://localhost/Buzznation-assets/login.php`
-3. Login with default credentials:
+2. Navigate to: `http://your-domain.com/setup-check.php` or `http://localhost/Buzznation-assets/setup-check.php`
+3. Review all checks - they should all pass with green checkmarks
+4. If any checks fail, follow the instructions on the page to resolve them
+
+**Important**: The setup-check.php page displays detailed error information. For security, you should remove or restrict access to this file in production.
+
+### Step 8: Test Application Access
+
+Once all checks pass in setup-check.php:
+
+1. Navigate to: `http://your-domain.com/login.php` or `http://localhost/Buzznation-assets/login.php`
+2. Login with default credentials:
    - Username: `admin`
    - Password: `admin123`
 
-### Step 8: Post-Installation Security
+### Step 9: Post-Installation Security
 
 **IMPORTANT**: After successful login, immediately:
 
