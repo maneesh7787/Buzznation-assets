@@ -2,6 +2,9 @@
 /**
  * Setup Check - Verify environment and configuration
  * Access this file to check if your environment is properly configured
+ * 
+ * SECURITY WARNING: This file displays sensitive system information and should be
+ * removed or access-restricted in production environments to prevent information disclosure.
  */
 
 // Enable error display for this diagnostic page
