@@ -47,8 +47,22 @@ A comprehensive web-based asset management system built with PHP, MySQL, HTML, C
 
 - PHP 7.4 or higher
 - MySQL 5.7 or higher
-- Apache/Nginx web server
+- Apache/Nginx web server (or use PHP's built-in server for local development)
 - Modern web browser
+
+## Quick Start - Run on Local Server 🚀
+
+**Want to run this on your local computer?** See the **[LOCAL_SERVER_GUIDE.md](LOCAL_SERVER_GUIDE.md)** for complete step-by-step instructions!
+
+### Fastest Method (3 minutes):
+
+1. Install PHP and MySQL
+2. Clone this repository
+3. Create database and import schema
+4. Run: `php -S localhost:8080`
+5. Open: http://localhost:8080
+
+[**👉 View Complete Local Server Guide**](LOCAL_SERVER_GUIDE.md)
 
 ## Installation
 
@@ -202,9 +216,14 @@ asset-management/
 - Success/error notifications
 - Modal-based forms
 
-## Support
+## Support & Documentation
 
-For issues and questions, please contact the IT department or create an issue in the repository.
+- **[LOCAL_SERVER_GUIDE.md](LOCAL_SERVER_GUIDE.md)** - Complete guide for running on local server
+- **[QUICKSTART.md](QUICKSTART.md)** - User guide and common tasks
+- **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation instructions
+- **[SECURITY.md](SECURITY.md)** - Security best practices
+
+For issues and questions, please create an issue in the repository.
 
 ## License
 
