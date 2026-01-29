@@ -2,6 +2,7 @@
 $page_title = 'Manage Assets';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 requireRole('admin');
 
 $conn = getDBConnection();
@@ -27,6 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $conn->prepare("INSERT INTO assets (asset_tag, category_id, brand, model, serial_number, purchase_date, purchase_cost, condition_status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->bind_param("sissssdss", $asset_tag, $category_id, $brand, $model, $serial_number, $purchase_date, $purchase_cost, $condition_status, $notes);
                     $stmt->execute();
+                    $asset_id = $conn->insert_id;
+                    
+                    // Log audit
+                    logAudit('create_asset', 'asset', $asset_id, [
+                        'asset_tag' => $asset_tag,
+                        'category_id' => $category_id,
+                        'brand' => $brand,
+                        'model' => $model
+                    ]);
                     
                     $message = 'Asset added successfully!';
                     $message_type = 'success';
@@ -54,6 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->bind_param("sissssdsssi", $asset_tag, $category_id, $brand, $model, $serial_number, $purchase_date, $purchase_cost, $status, $condition_status, $notes, $id);
                     $stmt->execute();
                     
+                    // Log audit
+                    logAudit('update_asset', 'asset', $id, [
+                        'asset_tag' => $asset_tag,
+                        'status' => $status
+                    ]);
+                    
                     $message = 'Asset updated successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -80,6 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt = $conn->prepare("DELETE FROM assets WHERE id = ?");
                         $stmt->bind_param("i", $id);
                         $stmt->execute();
+                        
+                        // Log audit
+                        logAudit('delete_asset', 'asset', $id, 'Asset deleted');
                         
                         $message = 'Asset deleted successfully!';
                         $message_type = 'success';

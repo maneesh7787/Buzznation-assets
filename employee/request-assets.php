@@ -2,6 +2,7 @@
 $page_title = 'Request Assets';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 requireRole('employee');
 
 $conn = getDBConnection();
@@ -36,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $stmt = $conn->prepare("INSERT INTO asset_requests (employee_id, requested_asset_ids, request_reason, acknowledgement, acknowledgement_date) VALUES (?, ?, ?, ?, NOW())");
             $stmt->bind_param("issi", $employee['id'], $asset_ids_str, $request_reason, $acknowledgement);
             $stmt->execute();
+            $request_id = $conn->insert_id;
+            
+            // Log audit
+            logAudit('submit_asset_request', 'asset_request', $request_id, [
+                'assets_count' => count($asset_ids),
+                'reason' => $request_reason
+            ]);
             
             $message = 'Your asset request has been submitted successfully! The admin will review it shortly.';
             $message_type = 'success';

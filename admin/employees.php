@@ -2,6 +2,7 @@
 $page_title = 'Manage Employees';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 requireRole('admin');
 
 $conn = getDBConnection();
@@ -46,6 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     $conn->commit();
+                    
+                    // Log audit
+                    logAudit('create_employee', 'employee', $emp_db_id, [
+                        'employee_id' => $employee_id,
+                        'name' => $name,
+                        'department' => $department
+                    ]);
+                    
                     $message = 'Employee added successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -77,6 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->bind_param("sssssssi", $name, $department, $designation, $date_of_joining, $work_location, $email, $phone, $id);
                     $stmt->execute();
                     
+                    // Log audit
+                    logAudit('update_employee', 'employee', $id, ['name' => $name]);
+                    
                     $message = 'Employee updated successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -94,6 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->bind_param("si", $status, $id);
                     $stmt->execute();
                     
+                    // Log audit
+                    logAudit('change_employee_status', 'employee', $id, ['status' => $status]);
+                    
                     $message = 'Employee status updated successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {
@@ -110,6 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $conn->prepare("UPDATE users SET password = ? WHERE employee_id = ?");
                     $stmt->bind_param("si", $new_password, $emp_id);
                     $stmt->execute();
+                    
+                    // Log audit
+                    logAudit('change_employee_password', 'employee', $emp_id, 'Password changed by admin');
                     
                     $message = 'Password changed successfully!';
                     $message_type = 'success';
@@ -149,6 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     $conn->commit();
+                    
+                    // Log audit
+                    logAudit('delete_employee', 'employee', $id, 'Employee deleted');
+                    
                     $message = 'Employee deleted successfully!';
                     $message_type = 'success';
                 } catch (Exception $e) {

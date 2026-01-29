@@ -60,6 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->execute();
                         
                         $conn->commit();
+                        
+                        // Log audit
+                        logAudit('approve_asset_request', 'asset_request', $request_id, [
+                            'employee_id' => $request['employee_id'],
+                            'assets_count' => count($asset_ids)
+                        ]);
+                        
                         $message = 'Asset request approved and assets assigned successfully!';
                         $message_type = 'success';
                     } else {
@@ -80,6 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $conn->prepare("UPDATE asset_requests SET status = 'rejected', admin_notes = ?, approved_by = ?, approved_date = NOW() WHERE id = ?");
                     $stmt->bind_param("sii", $admin_notes, $_SESSION['user_id'], $request_id);
                     $stmt->execute();
+                    
+                    // Log audit
+                    logAudit('reject_asset_request', 'asset_request', $request_id, 'Request rejected');
                     
                     $message = 'Asset request rejected.';
                     $message_type = 'warning';

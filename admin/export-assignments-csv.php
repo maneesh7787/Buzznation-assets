@@ -7,9 +7,13 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 requireRole('admin');
 
 $conn = getDBConnection();
+
+// Log export action
+logAudit('export_assignments', null, null, 'Exported assignments to CSV');
 
 // Query to get all active and historical assignments with employee and asset details
 $query = "SELECT 
