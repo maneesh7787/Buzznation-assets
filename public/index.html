@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .requests-list,
+        .assets-list {
+            margin-top: 20px;
+        }
+
+        .request-card,
+        .asset-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .request-card h3,
+        .asset-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .request-card p,
+        .asset-card p {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-fulfilled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .asset-types-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Asset Management System</h1>
+            <p>Manage and request company assets efficiently</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('employee')">Employee - Request Assets</button>
+            <button class="tab-button" onclick="switchTab('it')">IT - Manage Assets</button>
+            <button class="tab-button" onclick="switchTab('review')">IT - Review Requests</button>
+        </div>
+
+        <!-- Employee Tab: Request Assets -->
+        <div id="employee-tab" class="tab-content active">
+            <h2>Request Assets</h2>
+            <div class="asset-types-info">
+                <strong>ℹ️ Note:</strong> Select the type of assets you need. The IT team will review your request and assign appropriate assets based on your requirements.
+            </div>
+            
+            <div id="employee-message" class="message"></div>
+            
+            <form id="asset-request-form">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="employeeId">Employee ID *</label>
+                        <input type="text" id="employeeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeName">Full Name *</label>
+                        <input type="text" id="employeeName" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeeEmail">Email *</label>
+                    <input type="email" id="employeeEmail" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Assets Needed * (Choose all that apply)</label>
+                    <div id="available-assets" class="checkbox-group">
+                        <div class="loading">Loading available assets...</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="requirements">Describe Your Requirements *</label>
+                    <textarea id="requirements" required placeholder="Please describe your specific requirements, preferred specifications, or any other details that would help the IT team assign the right assets to you..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </form>
+        </div>
+
+        <!-- IT Tab: Manage Assets -->
+        <div id="it-tab" class="tab-content">
+            <h2>Add New Asset</h2>
+            
+            <div id="it-message" class="message"></div>
+            
+            <form id="add-asset-form">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="assetType">Asset Type *</label>
+                        <input type="text" id="assetType" required placeholder="e.g., Laptop, Desktop, Mouse, Keyboard">
+                    </div>
+                    <div class="form-group">
+                        <label for="brand">Brand / Company</label>
+                        <input type="text" id="brand" placeholder="e.g., Dell, HP, Logitech">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="model">Model</label>
+                        <input type="text" id="model" placeholder="e.g., XPS 15, ThinkPad T14">
+                    </div>
+                    <div class="form-group">
+                        <label for="serialNumber">Serial Number</label>
+                        <input type="text" id="serialNumber">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="price">Price</label>
+                        <input type="number" id="price" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="currency">Currency *</label>
+                        <select id="currency" required>
+                            <option value="">Select Currency</option>
+                            <option value="INR">INR (Indian Rupee)</option>
+                            <option value="USD">USD (US Dollar)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Asset</button>
+            </form>
+
+            <hr style="margin: 30px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+            <h2>Asset Inventory</h2>
+            <div id="assets-list" class="assets-list">
+                <div class="loading">Loading assets...</div>
+            </div>
+        </div>
+
+        <!-- Review Tab: Review Requests -->
+        <div id="review-tab" class="tab-content">
+            <h2>Asset Requests - Review & Assign</h2>
+            
+            <div id="review-message" class="message"></div>
+            
+            <div id="requests-list" class="requests-list">
+                <div class="loading">Loading requests...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Tab switching
+        function switchTab(tab) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab
+            if (tab === 'employee') {
+                document.getElementById('employee-tab').classList.add('active');
+                document.querySelector('.tab-button:nth-child(1)').classList.add('active');
+                loadAvailableAssets();
+            } else if (tab === 'it') {
+                document.getElementById('it-tab').classList.add('active');
+                document.querySelector('.tab-button:nth-child(2)').classList.add('active');
+                loadAssets();
+            } else if (tab === 'review') {
+                document.getElementById('review-tab').classList.add('active');
+                document.querySelector('.tab-button:nth-child(3)').classList.add('active');
+                loadRequests();
+            }
+        }
+
+        // Show message
+        function showMessage(elementId, message, isError = false) {
+            const messageEl = document.getElementById(elementId);
+            messageEl.textContent = message;
+            messageEl.className = `message ${isError ? 'error' : 'success'} show`;
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 5000);
+        }
+
+        // Load available asset types for employee
+        async function loadAvailableAssets() {
+            try {
+                const response = await fetch(`${API_BASE}/assets/available-types`);
+                const data = await response.json();
+                
+                const container = document.getElementById('available-assets');
+                
+                if (!data.assetTypes || data.assetTypes.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No assets available currently. Please contact IT.</div>';
+                    return;
+                }
+
+                container.innerHTML = data.assetTypes.map(type => `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="asset-${type}" name="assets" value="${type}">
+                        <label for="asset-${type}">${type}</label>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading available assets:', error);
+                document.getElementById('available-assets').innerHTML = 
+                    '<div class="empty-state">Error loading assets. Please try again.</div>';
+            }
+        }
+
+        // Submit asset request
+        document.getElementById('asset-request-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const selectedAssets = Array.from(document.querySelectorAll('input[name="assets"]:checked'))
+                .map(cb => cb.value);
+
+            if (selectedAssets.length === 0) {
+                showMessage('employee-message', 'Please select at least one asset type.', true);
+                return;
+            }
+
+            const requestData = {
+                employeeId: document.getElementById('employeeId').value,
+                employeeName: document.getElementById('employeeName').value,
+                employeeEmail: document.getElementById('employeeEmail').value,
+                requestedAssets: selectedAssets,
+                requirements: document.getElementById('requirements').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/requests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    showMessage('employee-message', 'Request submitted successfully! IT and HR teams have been notified.');
+                    document.getElementById('asset-request-form').reset();
+                    document.querySelectorAll('input[name="assets"]:checked').forEach(cb => cb.checked = false);
+                } else {
+                    const error = await response.json();
+                    showMessage('employee-message', error.error || 'Failed to submit request.', true);
+                }
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                showMessage('employee-message', 'Error submitting request. Please try again.', true);
+            }
+        });
+
+        // Add new asset
+        document.getElementById('add-asset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const price = document.getElementById('price').value;
+            const currency = document.getElementById('currency').value;
+
+            // Validate currency if price is provided
+            if (price && !currency) {
+                showMessage('it-message', 'Please select a currency when entering a price.', true);
+                return;
+            }
+
+            const assetData = {
+                assetType: document.getElementById('assetType').value,
+                brand: document.getElementById('brand').value || undefined,
+                model: document.getElementById('model').value || undefined,
+                serialNumber: document.getElementById('serialNumber').value || undefined,
+                price: price ? parseFloat(price) : undefined,
+                currency: currency || undefined
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/assets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(assetData)
+                });
+
+                if (response.ok) {
+                    showMessage('it-message', 'Asset added successfully!');
+                    document.getElementById('add-asset-form').reset();
+                    loadAssets();
+                } else {
+                    const error = await response.json();
+                    showMessage('it-message', error.error || 'Failed to add asset.', true);
+                }
+            } catch (error) {
+                console.error('Error adding asset:', error);
+                showMessage('it-message', 'Error adding asset. Please try again.', true);
+            }
+        });
+
+        // Load all assets
+        async function loadAssets() {
+            try {
+                const response = await fetch(`${API_BASE}/assets`);
+                const assets = await response.json();
+                
+                const container = document.getElementById('assets-list');
+                
+                if (assets.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No assets in inventory yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = assets.map(asset => `
+                    <div class="asset-card">
+                        <h3>${asset.assetType}${asset.brand ? ` - ${asset.brand}` : ''}${asset.model ? ` ${asset.model}` : ''}</h3>
+                        ${asset.serialNumber ? `<p><strong>Serial:</strong> ${asset.serialNumber}</p>` : ''}
+                        ${asset.price && asset.currency ? `<p><strong>Price:</strong> ${asset.currency} ${asset.price.toFixed(2)}</p>` : ''}
+                        <p><strong>Status:</strong> <span class="status-badge status-${asset.status}">${asset.status}</span></p>
+                        ${asset.assignedTo ? `<p><strong>Assigned To:</strong> ${asset.assignedTo}</p>` : ''}
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">Added: ${new Date(asset.createdAt).toLocaleString()}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading assets:', error);
+                document.getElementById('assets-list').innerHTML = 
+                    '<div class="empty-state">Error loading assets. Please try again.</div>';
+            }
+        }
+
+        // Load all requests
+        async function loadRequests() {
+            try {
+                const response = await fetch(`${API_BASE}/requests`);
+                const requests = await response.json();
+                
+                const container = document.getElementById('requests-list');
+                
+                if (requests.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No asset requests yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = requests.map(request => `
+                    <div class="request-card">
+                        <h3>Request from ${request.employeeName}</h3>
+                        <p><strong>Employee ID:</strong> ${request.employeeId}</p>
+                        <p><strong>Email:</strong> ${request.employeeEmail}</p>
+                        <p><strong>Requested Assets:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 10px;">
+                            ${request.requestedAssets.map(asset => `<li>${asset}</li>`).join('')}
+                        </ul>
+                        <p><strong>Requirements:</strong></p>
+                        <p style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px;">${request.requirements}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-${request.status}">${request.status}</span></p>
+                        ${request.reviewedBy ? `<p><strong>Reviewed By:</strong> ${request.reviewedBy}</p>` : ''}
+                        ${request.reviewNotes ? `<p><strong>Review Notes:</strong> ${request.reviewNotes}</p>` : ''}
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">Requested: ${new Date(request.createdAt).toLocaleString()}</p>
+                        
+                        ${request.status === 'pending' ? `
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button class="btn btn-success" onclick="reviewRequest('${request.id}', 'approved')">Approve</button>
+                                <button class="btn btn-danger" onclick="reviewRequest('${request.id}', 'rejected')">Reject</button>
+                                <button class="btn btn-primary" onclick="reviewRequest('${request.id}', 'fulfilled')">Mark as Fulfilled</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                document.getElementById('requests-list').innerHTML = 
+                    '<div class="empty-state">Error loading requests. Please try again.</div>';
+            }
+        }
+
+        // Review request
+        async function reviewRequest(requestId, status) {
+            const reviewedBy = prompt('Enter your name (reviewer):');
+            if (!reviewedBy) return;
+
+            const reviewNotes = prompt('Enter review notes (optional):') || '';
+
+            try {
+                const response = await fetch(`${API_BASE}/requests/${requestId}/review`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, reviewedBy, reviewNotes })
+                });
+
+                if (response.ok) {
+                    showMessage('review-message', `Request ${status} successfully!`);
+                    loadRequests();
+                } else {
+                    const error = await response.json();
+                    showMessage('review-message', error.error || 'Failed to review request.', true);
+                }
+            } catch (error) {
+                console.error('Error reviewing request:', error);
+                showMessage('review-message', 'Error reviewing request. Please try again.', true);
+            }
+        }
+
+        // Initialize
+        loadAvailableAssets();
+    </script>
+</body>
+</html>
