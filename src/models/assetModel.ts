@@ -46,7 +46,7 @@ export const getAvailableAssetTypes = (): string[] => {
 export const createAsset = (input: CreateAssetInput): Asset => {
   const assets = getAllAssets();
   const newAsset: Asset = {
-    id: `asset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `asset_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     ...input,
     status: 'available',
     createdAt: new Date(),
@@ -86,7 +86,7 @@ export const getAssetRequestById = (id: string): AssetRequest | undefined => {
 export const createAssetRequest = (input: CreateAssetRequest): AssetRequest => {
   const requests = getAllAssetRequests();
   const newRequest: AssetRequest = {
-    id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     ...input,
     status: 'pending',
     createdAt: new Date(),

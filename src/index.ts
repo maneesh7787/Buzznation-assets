@@ -28,8 +28,13 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', message: 'Asset Management System is running' });
 });
 
-// Serve frontend for all other routes
+// Serve frontend for all other non-API routes
 app.use((req: Request, res: Response) => {
+  // Return 404 for unknown API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  // Serve index.html for all other routes (SPA routing)
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
